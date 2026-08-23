@@ -121,19 +121,19 @@
     margin-top: 10px;
     display:flex; align-items:center; gap: 8px;
   }
-  .rate-row input[type="number"]{
-    width: 62px;
+  .rate-row input[type="text"]{
+    width: 52px;
     background: var(--panel);
     border: 1px solid var(--panel-line);
     color: var(--gold-bright);
     font-family:'JetBrains Mono', monospace;
     font-weight: 700;
     font-size: 15px;
-    padding: 6px 8px;
+    padding: 6px 4px;
     border-radius: 6px;
     text-align:center;
   }
-  .rate-row input[type="number"]:focus{
+  .rate-row input[type="text"]:focus{
     outline: none;
     border-color: var(--gold);
   }
@@ -150,7 +150,32 @@
     visibility: hidden;
   }
   .card.rated .clear-btn{ visibility: visible; }
-  .card.rated .rate-row input[type="number"]{ border-color: var(--gold); }
+  .card.rated .rate-row input[type="text"]{ border-color: var(--gold); }
+
+  .imdb-badge{
+    display: none;
+    align-items: center;
+    gap: 5px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: #f5c518;
+    background: rgba(245, 197, 24, 0.1);
+    border: 1px solid rgba(245, 197, 24, 0.3);
+    padding: 5px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .imdb-badge.show{ display: inline-flex; }
+  .imdb-badge .imdb-tag{
+    background: #f5c518;
+    color: #000;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 1px 3px;
+    border-radius: 3px;
+    letter-spacing: 0.3px;
+  }
 
   footer{
     text-align:center;
@@ -165,7 +190,7 @@
 
 <header>
   <h1>MCU MOVIES</h1>
-  <div class="subtitle">Chronological order</div>
+  <div class="subtitle">Chronological order &middot; Spider-Man to Doomsday</div>
   <div class="stats">
     <div><b id="statCount">0 / 0</b>rated</div>
     <div><b id="statAvg">&mdash;</b>your average</div>
@@ -176,7 +201,7 @@
   <div class="timeline" id="list"></div>
 </main>
 
-<footer>Made only for Adélka ♡</footer>
+<footer>>Made only for Adélka ♡</footer>
 
 <script>
 const MOVIES = [
@@ -224,6 +249,10 @@ const MOVIES = [
   { title: "Avengers: Doomsday", year: 2026, wiki: "Avengers: Doomsday" }
 ];
 
+// Get a free key at https://www.omdbapi.com/apikey.aspx (instant, no card needed)
+// then paste it below between the quotes.
+const OMDB_API_KEY = "YOUR_KEY_HERE";
+
 const STORAGE_KEY = "mcu-ratings-v1";
 function loadRatings(){
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
@@ -233,6 +262,56 @@ function saveRatings(r){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(r));
 }
 let ratings = loadRatings();
+
+const IMDB_CACHE_KEY = "mcu-imdb-cache-v1";
+function loadImdbCache(){
+  try { return JSON.parse(localStorage.getItem(IMDB_CACHE_KEY)) || {}; }
+  catch(e){ return {}; }
+}
+function saveImdbCache(c){
+  localStorage.setItem(IMDB_CACHE_KEY, JSON.stringify(c));
+}
+let imdbCache = loadImdbCache();
+
+function showImdbBadge(el, score){
+  el.querySelector(".score").textContent = score;
+  el.classList.add("show");
+}
+
+function revealImdb(movie, badgeEl){
+  if(!badgeEl) return;
+  const cached = imdbCache[movie.title];
+  if(cached){
+    showImdbBadge(badgeEl, cached);
+    return;
+  }
+  if(!OMDB_API_KEY || OMDB_API_KEY === "Y731b591a") return;
+  fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(movie.title)}&y=${movie.year}&apikey=${OMDB_API_KEY}`)
+    .then(r => r.json())
+    .then(data => {
+      if(data && data.imdbRating && data.imdbRating !== "N/A"){
+        imdbCache[movie.title] = data.imdbRating;
+        saveImdbCache(imdbCache);
+        showImdbBadge(badgeEl, data.imdbRating);
+      }
+    })
+    .catch(() => {});
+}
+
+// Restricts input to IMDb-style scores: a single digit, optionally with
+// one decimal digit (e.g. "6.8"), or exactly "10". Max two digits total.
+function sanitizeScoreInput(raw){
+  let v = raw.replace(/[^0-9.]/g, "");
+  const firstDot = v.indexOf(".");
+  if(firstDot !== -1){
+    v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, "");
+  }
+  let [intPart, decPart] = v.split(".");
+  if(intPart && intPart.length > 2) intPart = intPart.slice(0, 2);
+  if(intPart && Number(intPart) > 10) intPart = "10";
+  if(decPart !== undefined) decPart = decPart.slice(0, 1);
+  return decPart !== undefined ? `${intPart}.${decPart}` : (intPart || "");
+}
 
 function updateStats(){
   const vals = Object.values(ratings).filter(v => v !== undefined && v !== null && v !== "");
@@ -262,10 +341,11 @@ MOVIES.forEach((m, i) => {
       <div class="title">${m.title}</div>
       <div class="year">${m.year}</div>
       <div class="rate-row">
-        <input type="number" min="0" max="10" step="0.1" inputmode="decimal"
+        <input type="text" inputmode="decimal" maxlength="4"
                placeholder="—" id="rate-${i}"
                value="${existing !== undefined ? existing : ''}">
         <span class="max">/ 10</span>
+        <span class="imdb-badge" id="imdb-${i}"><span class="imdb-tag">IMDb</span><span class="score"></span></span>
         <button class="clear-btn" id="clear-${i}">clear</button>
       </div>
     </div>
@@ -273,18 +353,31 @@ MOVIES.forEach((m, i) => {
   list.appendChild(card);
 
   const input = card.querySelector(`#rate-${i}`);
+  const imdbBadge = card.querySelector(`#imdb-${i}`);
+
+  if(existing !== undefined && existing !== "") revealImdb(m, imdbBadge);
+
   input.addEventListener("input", () => {
-    let v = input.value;
-    if(v === ""){
+    input.value = sanitizeScoreInput(input.value);
+    if(input.value === ""){
       delete ratings[m.title];
       card.classList.remove("rated");
     } else {
-      v = Math.max(0, Math.min(10, Number(v)));
-      ratings[m.title] = v;
+      ratings[m.title] = input.value;
       card.classList.add("rated");
     }
     saveRatings(ratings);
     updateStats();
+  });
+
+  input.addEventListener("blur", () => {
+    if(input.value === "") return;
+    let v = Math.max(0, Math.min(10, Number(input.value)));
+    v = Math.round(v * 10) / 10;
+    input.value = v;
+    ratings[m.title] = v;
+    saveRatings(ratings);
+    revealImdb(m, imdbBadge);
   });
 
   card.querySelector(`#clear-${i}`).addEventListener("click", () => {
