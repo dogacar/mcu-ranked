@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>MCU Ranked</title>
+<link rel="icon" href="data:,">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0c11;
+    --panel: #12151d;
+    --panel-line: #1f2430;
+    --gold: #d4a017;
+    --gold-bright: #f2c94c;
+    --text: #e8e6df;
+    --text-dim: #7d8394;
+    --spine: #2a3040;
+  }
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{
+    margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family:'Inter', sans-serif;
+    min-height:100%;
+  }
+  body{ padding-bottom: 60px; }
+
+  header{
+    position: sticky; top:0; z-index: 10;
+    background: linear-gradient(180deg, rgba(10,12,17,1) 60%, rgba(10,12,17,0.85));
+    backdrop-filter: blur(6px);
+    padding: 22px 20px 14px;
+    border-bottom: 1px solid var(--panel-line);
+  }
+  h1{
+    font-family:'Bebas Neue', sans-serif;
+    font-size: 40px;
+    letter-spacing: 2px;
+    margin: 0;
+    line-height: 1;
+    color: var(--gold-bright);
+  }
+  .subtitle{
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-top: 6px;
+    font-family:'JetBrains Mono', monospace;
+  }
+  .stats{
+    margin-top: 14px;
+    display:flex; gap: 18px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .stats b{ color: var(--gold-bright); font-size: 15px; display:block; }
+
+  main{ padding: 10px 16px 0; max-width: 640px; margin: 0 auto; }
+
+  .timeline{ position: relative; }
+  .timeline::before{
+    content:"";
+    position:absolute;
+    left: 27px; top: 8px; bottom: 8px;
+    width: 2px;
+    background: var(--spine);
+  }
+
+  .card{
+    position: relative;
+    display:flex;
+    gap: 14px;
+    padding: 16px 0 16px 54px;
+    border-bottom: 1px solid var(--panel-line);
+    opacity: 0;
+    animation: rise .5s ease forwards;
+  }
+  @keyframes rise{ from{opacity:0; transform: translateY(8px);} to{opacity:1; transform:none;} }
+
+  .idx{
+    position:absolute;
+    left: 0; top: 18px;
+    width: 56px;
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--bg);
+  }
+  .idx .dot{
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--gold);
+    border: 3px solid var(--bg);
+    position: absolute; left: 21px; top: -18px;
+    box-shadow: 0 0 0 2px var(--spine);
+  }
+
+  .poster{
+    flex: none;
+    width: 64px; height: 96px;
+    border-radius: 6px;
+    background: var(--panel);
+    background-size: cover;
+    background-position: center;
+    border: 1px solid var(--panel-line);
+  }
+
+  .info{ flex: 1; min-width: 0; }
+  .title{
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+  .year{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 3px;
+  }
+
+  .rate-row{
+    margin-top: 10px;
+    display:flex; align-items:center; gap: 8px;
+  }
+  .rate-row input[type="number"]{
+    width: 62px;
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    color: var(--gold-bright);
+    font-family:'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 15px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    text-align:center;
+  }
+  .rate-row input[type="number"]:focus{
+    outline: none;
+    border-color: var(--gold);
+  }
+  .rate-row .max{ color: var(--text-dim); font-size: 12px; font-family:'JetBrains Mono', monospace; }
+  .clear-btn{
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-family:'JetBrains Mono', monospace;
+    cursor: pointer;
+    padding: 4px 6px;
+    visibility: hidden;
+  }
+  .card.rated .clear-btn{ visibility: visible; }
+  .card.rated .rate-row input[type="number"]{ border-color: var(--gold); }
+
+  footer{
+    text-align:center;
+    color: var(--text-dim);
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 30px 20px 10px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>MCU RANKED</h1>
+  <div class="subtitle">Chronological order &middot; Iron Man to Doomsday</div>
+  <div class="stats">
+    <div><b id="statCount">0 / 0</b>rated</div>
+    <div><b id="statAvg">&mdash;</b>your average</div>
+  </div>
+</header>
+
+<main>
+  <div class="timeline" id="list"></div>
+</main>
+
+<footer>Ratings are saved on this device only.</footer>
+
+<script>
+const MOVIES = [
+  { title: "Iron Man", year: 2008, wiki: "Iron Man (2008 film)" },
+  { title: "The Incredible Hulk", year: 2008, wiki: "The Incredible Hulk (film)" },
+  { title: "Iron Man 2", year: 2010, wiki: "Iron Man 2" },
+  { title: "Thor", year: 2011, wiki: "Thor (film)" },
+  { title: "Captain America: The First Avenger", year: 2011, wiki: "Captain America: The First Avenger" },
+  { title: "The Avengers", year: 2012, wiki: "The Avengers (2012 film)" },
+  { title: "Iron Man 3", year: 2013, wiki: "Iron Man 3" },
+  { title: "Thor: The Dark World", year: 2013, wiki: "Thor: The Dark World" },
+  { title: "Captain America: The Winter Soldier", year: 2014, wiki: "Captain America: The Winter Soldier" },
+  { title: "Guardians of the Galaxy", year: 2014, wiki: "Guardians of the Galaxy (film)" },
+  { title: "Avengers: Age of Ultron", year: 2015, wiki: "Avengers: Age of Ultron" },
+  { title: "Ant-Man", year: 2015, wiki: "Ant-Man (film)" },
+  { title: "Captain America: Civil War", year: 2016, wiki: "Captain America: Civil War" },
+  { title: "Doctor Strange", year: 2016, wiki: "Doctor Strange (2016 film)" },
+  { title: "Guardians of the Galaxy Vol. 2", year: 2017, wiki: "Guardians of the Galaxy Vol. 2" },
+  { title: "Spider-Man: Homecoming", year: 2017, wiki: "Spider-Man: Homecoming" },
+  { title: "Thor: Ragnarok", year: 2017, wiki: "Thor: Ragnarok" },
+  { title: "Black Panther", year: 2018, wiki: "Black Panther (film)" },
+  { title: "Avengers: Infinity War", year: 2018, wiki: "Avengers: Infinity War" },
+  { title: "Ant-Man and The Wasp", year: 2018, wiki: "Ant-Man and the Wasp" },
+  { title: "Captain Marvel", year: 2019, wiki: "Captain Marvel (film)" },
+  { title: "Avengers: Endgame", year: 2019, wiki: "Avengers: Endgame" },
+  { title: "Spider-Man: Far From Home", year: 2019, wiki: "Spider-Man: Far From Home" },
+  { title: "Black Widow", year: 2021, wiki: "Black Widow (film)" },
+  { title: "Shang-Chi and The Legend of The Ten Rings", year: 2021, wiki: "Shang-Chi and the Legend of the Ten Rings" },
+  { title: "Eternals", year: 2021, wiki: "Eternals (film)" },
+  { title: "Spider-Man: No Way Home", year: 2021, wiki: "Spider-Man: No Way Home" },
+  { title: "Doctor Strange in the Multiverse of Madness", year: 2022, wiki: "Doctor Strange in the Multiverse of Madness" },
+  { title: "Thor: Love and Thunder", year: 2022, wiki: "Thor: Love and Thunder" },
+  { title: "Black Panther: Wakanda Forever", year: 2022, wiki: "Black Panther: Wakanda Forever" },
+  { title: "Ant-Man and The Wasp: Quantumania", year: 2023, wiki: "Ant-Man and the Wasp: Quantumania" },
+  { title: "Guardians of the Galaxy Vol. 3", year: 2023, wiki: "Guardians of the Galaxy Vol. 3" },
+  { title: "The Marvels", year: 2023, wiki: "The Marvels" },
+  { title: "Deadpool & Wolverine", year: 2024, wiki: "Deadpool & Wolverine" },
+  { title: "Captain America: Brave New World", year: 2025, wiki: "Captain America: Brave New World" },
+  { title: "Thunderbolts*", year: 2025, wiki: "Thunderbolts (film)" },
+  { title: "The Fantastic Four: First Steps", year: 2025, wiki: "The Fantastic Four: First Steps" },
+  { title: "Spider-Man: Brand New Day", year: 2026, wiki: "Spider-Man: Brand New Day" },
+  { title: "Avengers: Doomsday", year: 2026, wiki: "Avengers: Doomsday" }
+];
+
+const STORAGE_KEY = "mcu-ratings-v1";
+function loadRatings(){
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch(e){ return {}; }
+}
+function saveRatings(r){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(r));
+}
+let ratings = loadRatings();
+
+function updateStats(){
+  const vals = Object.values(ratings).filter(v => v !== undefined && v !== null && v !== "");
+  document.getElementById("statCount").textContent = vals.length + " / " + MOVIES.length;
+  if(vals.length){
+    const avg = vals.reduce((a,b)=>a+Number(b),0) / vals.length;
+    document.getElementById("statAvg").textContent = avg.toFixed(1);
+  } else {
+    document.getElementById("statAvg").textContent = "—";
+  }
+}
+
+const list = document.getElementById("list");
+
+MOVIES.forEach((m, i) => {
+  const card = document.createElement("div");
+  card.className = "card";
+  card.style.animationDelay = (i * 0.02) + "s";
+
+  const existing = ratings[m.title];
+  if(existing !== undefined && existing !== "") card.classList.add("rated");
+
+  card.innerHTML = `
+    <div class="idx"><div class="dot"></div></div>
+    <div class="poster" id="poster-${i}"></div>
+    <div class="info">
+      <div class="title">${m.title}</div>
+      <div class="year">${m.year}</div>
+      <div class="rate-row">
+        <input type="number" min="0" max="10" step="0.1" inputmode="decimal"
+               placeholder="—" id="rate-${i}"
+               value="${existing !== undefined ? existing : ''}">
+        <span class="max">/ 10</span>
+        <button class="clear-btn" id="clear-${i}">clear</button>
+      </div>
+    </div>
+  `;
+  list.appendChild(card);
+
+  const input = card.querySelector(`#rate-${i}`);
+  input.addEventListener("input", () => {
+    let v = input.value;
+    if(v === ""){
+      delete ratings[m.title];
+      card.classList.remove("rated");
+    } else {
+      v = Math.max(0, Math.min(10, Number(v)));
+      ratings[m.title] = v;
+      card.classList.add("rated");
+    }
+    saveRatings(ratings);
+    updateStats();
+  });
+
+  card.querySelector(`#clear-${i}`).addEventListener("click", () => {
+    input.value = "";
+    delete ratings[m.title];
+    card.classList.remove("rated");
+    saveRatings(ratings);
+    updateStats();
+  });
+
+  // Fetch poster from Wikipedia (needs internet on first load; browser caches after)
+  fetch("https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(m.wiki))
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      const posterEl = document.getElementById(`poster-${i}`);
+      if(data && data.thumbnail && data.thumbnail.source && posterEl){
+        posterEl.style.backgroundImage = `url("${data.thumbnail.source}")`;
+      }
+    })
+    .catch(() => {});
+});
+
+updateStats();
+</script>
+</body>
+</html>
