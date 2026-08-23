@@ -278,6 +278,12 @@ function showImdbBadge(el, score){
   el.classList.add("show");
 }
 
+function hideImdbBadge(el){
+  if(!el) return;
+  el.classList.remove("show");
+  el.querySelector(".score").textContent = "";
+}
+
 function revealImdb(movie, badgeEl){
   if(!badgeEl) return;
   const cached = imdbCache[movie.title];
@@ -285,7 +291,7 @@ function revealImdb(movie, badgeEl){
     showImdbBadge(badgeEl, cached);
     return;
   }
-  if(!OMDB_API_KEY || OMDB_API_KEY === "Y731b591a") return;
+  if(!OMDB_API_KEY || OMDB_API_KEY === "YOUR_KEY_HERE") return;
   fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(movie.title)}&y=${movie.year}&apikey=${OMDB_API_KEY}`)
     .then(r => r.json())
     .then(data => {
@@ -384,6 +390,7 @@ MOVIES.forEach((m, i) => {
     input.value = "";
     delete ratings[m.title];
     card.classList.remove("rated");
+    hideImdbBadge(imdbBadge);
     saveRatings(ratings);
     updateStats();
   });
