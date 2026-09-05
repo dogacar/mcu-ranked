@@ -290,10 +290,10 @@
    1. SETTINGS — edit these three things, nothing else
    ============================================================ */
 
-// (a) Your OMDb key (already working)
+// (a) Your OMDb key
 const OMDB_API_KEY = "731b591a";
 
-// (b) The two of you. Change "Me" to your real name.
+// (b) The two of you.
 //     IMPORTANT: never change the "id" values once you start
 //     rating — they are what the saved scores are attached to.
 const PEOPLE = [
@@ -301,18 +301,24 @@ const PEOPLE = [
   { id: "p2", name: "Doggy" }
 ];
 
-// (c) Your Firebase Realtime Database URL (guide below).
-//     Paste it between the quotes, no trailing slash.
+// (c) Your Firebase Realtime Database URL, no trailing slash.
 const FIREBASE_DB_URL = "https://watchlist-c4c6c-default-rtdb.europe-west1.firebasedatabase.app";
 
 
 /* ============================================================
    2. THE LISTS
    ------------------------------------------------------------
-   To add something later, just add a line to the right list.
-   The "id" is the permanent name of that entry — as long as you
+   To add something later, add a line at the BOTTOM of the right
+   list — new things go last, in the order you added them.
+
+   The "id" is the permanent name of that entry. As long as you
    never change an existing id, existing scores are never lost.
-   Use a new, unique id for anything you add.
+   Always give anything new its own unique id.
+
+   Optional fields you can add to any line:
+     omdb:   "different title"   -> if OMDb can't find it by title
+     imdbId: "tt1234567"         -> most reliable IMDb lookup
+     poster: "https://..."       -> force a specific poster image
    ============================================================ */
 
 const CATALOG = [
@@ -346,7 +352,7 @@ const CATALOG = [
       { id:"mv-captainmarvel-2019", title:"Captain Marvel", year:2019, wiki:"Captain Marvel (film)" },
       { id:"mv-endgame-2019", title:"Avengers: Endgame", year:2019, wiki:"Avengers: Endgame" },
       { id:"mv-farfromhome-2019", title:"Spider-Man: Far From Home", year:2019, wiki:"Spider-Man: Far From Home" },
-      { id:"mv-blackwidow-2021", title:"Black Widow", year:2021, wiki:"Black Widow (film)" },
+      { id:"mv-blackwidow-2021", title:"Black Widow", year:2021, wiki:"Black Widow (2021 film)", imdbId:"tt3480822" },
       { id:"mv-shangchi-2021", title:"Shang-Chi and The Legend of The Ten Rings", year:2021, wiki:"Shang-Chi and the Legend of the Ten Rings", omdb:"Shang-Chi and the Legend of the Ten Rings" },
       { id:"mv-eternals-2021", title:"Eternals", year:2021, wiki:"Eternals (film)" },
       { id:"mv-nowayhome-2021", title:"Spider-Man: No Way Home", year:2021, wiki:"Spider-Man: No Way Home" },
@@ -390,8 +396,13 @@ const CATALOG = [
     key: "movies",
     label: "Movies",
     items: [
-      // Add anything you watch together here, e.g.:
-      // { id:"ot-parasite-2019", title:"Parasite", year:2019, wiki:"Parasite (2019 film)" },
+      // Newest additions go at the BOTTOM of this list.
+      { id:"ot-devilprada-2006", title:"The Devil Wears Prada", year:2006, wiki:"The Devil Wears Prada (film)" },
+      { id:"ot-serialbadweddings-2014", title:"Serial (Bad) Weddings", year:2014, wiki:"Serial (Bad) Weddings", omdb:"Serial (Bad) Weddings" },
+      { id:"ot-greatestshowman-2017", title:"The Greatest Showman", year:2017, wiki:"The Greatest Showman" },
+      { id:"ot-pussinboots2-2022", title:"Puss in Boots: The Last Wish", year:2022, wiki:"Puss in Boots: The Last Wish" },
+      { id:"ot-manfromuncle-2015", title:"The Man from U.N.C.L.E.", year:2015, wiki:"The Man from U.N.C.L.E. (film)" },
+      { id:"ot-obsession-2025", title:"Obsession", year:2025, wiki:"Obsession (2025 film)", imdbId:"tt37287335" }
     ]
   }
 ];
@@ -404,6 +415,7 @@ const CATALOG = [
 const ME_KEY = "wl-me-v1";
 const LOCAL_KEY = "wl-ratings-v1";
 const IMDB_CACHE_KEY = "wl-imdb-cache-v1";
+const POSTER_CACHE_KEY = "wl-poster-cache-v1";
 
 function readJSON(key, fallback){
   try { return JSON.parse(localStorage.getItem(key)) || fallback; }
@@ -414,9 +426,10 @@ function writeJSON(key, val){
 }
 
 // all ratings: { p1: {itemId: score}, p2: {itemId: score} }
-let allRatings = readJSON(LOCAL_KEY, {});
-let imdbCache  = readJSON(IMDB_CACHE_KEY, {});
-let meId       = localStorage.getItem(ME_KEY) || null;
+let allRatings   = readJSON(LOCAL_KEY, {});
+let imdbCache    = readJSON(IMDB_CACHE_KEY, {});
+let posterCache  = readJSON(POSTER_CACHE_KEY, {});
+let meId         = localStorage.getItem(ME_KEY) || null;
 
 function me(){ return PEOPLE.find(p => p.id === meId) || PEOPLE[0]; }
 function partner(){ return PEOPLE.find(p => p.id !== meId) || PEOPLE[1]; }
@@ -469,28 +482,41 @@ async function pushOne(itemId, value){
   }
 }
 
-// ---- IMDb ----
-function imdbUrl(item){
+// ---- OMDb ----
+function omdbUrl(item){
   if(item.imdbId) return `https://www.omdbapi.com/?i=${item.imdbId}&apikey=${OMDB_API_KEY}`;
   const t = encodeURIComponent(item.omdb || item.title);
   return `https://www.omdbapi.com/?t=${t}&y=${item.year}&apikey=${OMDB_API_KEY}`;
+}
+
+// One OMDb call gives us both the rating and a poster, so cache both.
+function fetchOmdb(item){
+  return fetch(omdbUrl(item))
+    .then(r => r.json())
+    .then(data => {
+      if(!data) return null;
+      if(data.imdbRating && data.imdbRating !== "N/A"){
+        imdbCache[item.id] = data.imdbRating;
+        writeJSON(IMDB_CACHE_KEY, imdbCache);
+      }
+      if(data.Poster && data.Poster !== "N/A"){
+        posterCache[item.id] = data.Poster;
+        writeJSON(POSTER_CACHE_KEY, posterCache);
+      }
+      return data;
+    })
+    .catch(() => null);
 }
 
 function revealImdb(item, badgeEl){
   if(!badgeEl) return;
   const cached = imdbCache[item.id];
   if(cached){ showBadge(badgeEl, cached); return; }
-  if(!OMDB_API_KEY) return;
-  fetch(imdbUrl(item))
-    .then(r => r.json())
-    .then(data => {
-      if(data && data.imdbRating && data.imdbRating !== "N/A"){
-        imdbCache[item.id] = data.imdbRating;
-        writeJSON(IMDB_CACHE_KEY, imdbCache);
-        showBadge(badgeEl, data.imdbRating);
-      }
-    })
-    .catch(() => {});
+  fetchOmdb(item).then(data => {
+    if(data && data.imdbRating && data.imdbRating !== "N/A"){
+      showBadge(badgeEl, data.imdbRating);
+    }
+  });
 }
 
 function showBadge(el, score){
@@ -501,6 +527,34 @@ function hideBadge(el){
   if(!el) return;
   el.classList.remove("show");
   el.querySelector(".score").textContent = "";
+}
+
+// ---- posters: manual -> cache -> Wikipedia -> OMDb ----
+function setPoster(el, url){
+  if(el && url) el.style.backgroundImage = `url("${url}")`;
+}
+
+async function loadPoster(item, el){
+  if(item.poster){ setPoster(el, item.poster); return; }
+  if(posterCache[item.id]){ setPoster(el, posterCache[item.id]); return; }
+
+  // 1. Wikipedia
+  try{
+    const res = await fetch("https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(item.wiki));
+    if(res.ok){
+      const d = await res.json();
+      if(d && d.thumbnail && d.thumbnail.source){
+        posterCache[item.id] = d.thumbnail.source;
+        writeJSON(POSTER_CACHE_KEY, posterCache);
+        setPoster(el, d.thumbnail.source);
+        return;
+      }
+    }
+  }catch(e){}
+
+  // 2. OMDb fallback (this is what rescues The Office, Black Widow, etc.)
+  const data = await fetchOmdb(item);
+  if(data && data.Poster && data.Poster !== "N/A") setPoster(el, data.Poster);
 }
 
 // ---- input rules: one digit, optional one decimal, or 10 ----
@@ -567,7 +621,7 @@ function renderAll(){
       return;
     }
 
-    group.items.forEach((item, i) => {
+    group.items.forEach(item => {
       const myVal = mine[item.id];
       const theirVal = theirs[item.id];
       const hasMine = myVal !== undefined && myVal !== null && myVal !== "";
@@ -592,10 +646,10 @@ function renderAll(){
       `;
       wrap.appendChild(card);
 
-      const input       = card.querySelector("input");
-      const imdbBadge   = card.querySelector(".imdb-badge");
-      const partnerBadge= card.querySelector(".partner-badge");
-      const posterEl    = card.querySelector(".poster");
+      const input        = card.querySelector("input");
+      const imdbBadge    = card.querySelector(".imdb-badge");
+      const partnerBadge = card.querySelector(".partner-badge");
+      const posterEl     = card.querySelector(".poster");
 
       function showPartner(){
         if(theirVal !== undefined && theirVal !== null && theirVal !== ""){
@@ -630,14 +684,7 @@ function renderAll(){
         updateStats();
       });
 
-      fetch("https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(item.wiki))
-        .then(r => r.ok ? r.json() : null)
-        .then(d => {
-          if(d && d.thumbnail && d.thumbnail.source){
-            posterEl.style.backgroundImage = `url("${d.thumbnail.source}")`;
-          }
-        })
-        .catch(() => {});
+      loadPoster(item, posterEl);
     });
 
     main.appendChild(wrap);
