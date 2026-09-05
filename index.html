@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>MCU MOVIES</title>
+<title>OUR WATCHLIST</title>
 <link rel="icon" href="data:,">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -13,6 +13,7 @@
     --panel-line: #1f2430;
     --gold: #d4a017;
     --gold-bright: #f2c94c;
+    --rose: #e0719a;
     --text: #e8e6df;
     --text-dim: #7d8394;
     --spine: #2a3040;
@@ -27,43 +28,89 @@
 
   header{
     position: sticky; top:0; z-index: 10;
-    background: linear-gradient(180deg, rgba(10,12,17,1) 60%, rgba(10,12,17,0.85));
+    background: linear-gradient(180deg, rgba(10,12,17,1) 70%, rgba(10,12,17,0.92));
     backdrop-filter: blur(6px);
-    padding: 22px 20px 14px;
+    padding: 20px 20px 0;
     border-bottom: 1px solid var(--panel-line);
   }
+  .head-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
   h1{
     font-family:'Bebas Neue', sans-serif;
-    font-size: 40px;
+    font-size: 38px;
     letter-spacing: 2px;
     margin: 0;
     line-height: 1;
     color: var(--gold-bright);
   }
-  .subtitle{
-    color: var(--text-dim);
-    font-size: 13px;
-    margin-top: 6px;
+  .whoami{
     font-family:'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: 20px;
+    padding: 6px 11px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex: none;
   }
   .stats{
-    margin-top: 14px;
-    display:flex; gap: 18px;
+    margin-top: 12px;
+    display:flex; gap: 18px; align-items:flex-end;
     font-family:'JetBrains Mono', monospace;
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-dim);
   }
   .stats b{ color: var(--gold-bright); font-size: 15px; display:block; }
+  .sync{
+    margin-left:auto;
+    font-size: 10px;
+    background:none; border:none; color: var(--text-dim);
+    font-family:'JetBrains Mono', monospace;
+    cursor:pointer; padding: 4px 0;
+  }
+
+  .tabs{
+    display:flex; gap: 4px;
+    margin-top: 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar{ display:none; }
+  .tab{
+    flex: none;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-dim);
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 10px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .tab.active{ color: var(--gold-bright); border-bottom-color: var(--gold); }
 
   main{ padding: 10px 16px 0; max-width: 640px; margin: 0 auto; }
 
-  .timeline{ position: relative; }
-  .timeline::before{
+  .timeline{ position: relative; display:none; }
+  .timeline.active{ display:block; }
+  .timeline:not(.empty)::before{
     content:"";
     position:absolute;
     left: 27px; top: 8px; bottom: 8px;
     width: 2px;
     background: var(--spine);
+  }
+
+  .empty-state{
+    text-align:center;
+    color: var(--text-dim);
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    padding: 60px 20px;
   }
 
   .card{
@@ -72,25 +119,18 @@
     gap: 14px;
     padding: 16px 0 16px 54px;
     border-bottom: 1px solid var(--panel-line);
-    opacity: 0;
-    animation: rise .5s ease forwards;
   }
-  @keyframes rise{ from{opacity:0; transform: translateY(8px);} to{opacity:1; transform:none;} }
 
   .idx{
     position:absolute;
     left: 0; top: 18px;
     width: 56px;
-    text-align:center;
-    font-family:'JetBrains Mono', monospace;
-    font-size: 11px;
-    color: var(--bg);
   }
   .idx .dot{
     width: 14px; height: 14px; border-radius: 50%;
     background: var(--gold);
     border: 3px solid var(--bg);
-    position: absolute; left: 21px; top: -18px;
+    position: absolute; left: 21px; top: 0;
     box-shadow: 0 0 0 2px var(--spine);
   }
 
@@ -105,11 +145,7 @@
   }
 
   .info{ flex: 1; min-width: 0; }
-  .title{
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 1.25;
-  }
+  .title{ font-size: 16px; font-weight: 600; line-height: 1.25; }
   .year{
     font-family:'JetBrains Mono', monospace;
     font-size: 11px;
@@ -120,6 +156,7 @@
   .rate-row{
     margin-top: 10px;
     display:flex; align-items:center; gap: 8px;
+    flex-wrap: wrap;
   }
   .rate-row input[type="text"]{
     width: 52px;
@@ -133,15 +170,10 @@
     border-radius: 6px;
     text-align:center;
   }
-  .rate-row input[type="text"]:focus{
-    outline: none;
-    border-color: var(--gold);
-  }
+  .rate-row input[type="text"]:focus{ outline: none; border-color: var(--gold); }
   .rate-row .max{ color: var(--text-dim); font-size: 12px; font-family:'JetBrains Mono', monospace; }
   .clear-btn{
-    margin-left: auto;
-    background: none;
-    border: none;
+    background: none; border: none;
     color: var(--text-dim);
     font-size: 11px;
     font-family:'JetBrains Mono', monospace;
@@ -152,30 +184,38 @@
   .card.rated .clear-btn{ visibility: visible; }
   .card.rated .rate-row input[type="text"]{ border-color: var(--gold); }
 
-  .imdb-badge{
+  .badge{
     display: none;
     align-items: center;
     gap: 5px;
     font-family:'JetBrains Mono', monospace;
     font-size: 11px;
     font-weight: 600;
-    color: #f5c518;
-    background: rgba(245, 197, 24, 0.1);
-    border: 1px solid rgba(245, 197, 24, 0.3);
     padding: 5px 8px;
     border-radius: 6px;
     white-space: nowrap;
   }
-  .imdb-badge.show{ display: inline-flex; }
-  .imdb-badge .imdb-tag{
-    background: #f5c518;
-    color: #000;
+  .badge.show{ display: inline-flex; }
+  .badge .tag{
     font-size: 9px;
     font-weight: 800;
     padding: 1px 3px;
     border-radius: 3px;
     letter-spacing: 0.3px;
+    color: #000;
   }
+  .imdb-badge{
+    color: #f5c518;
+    background: rgba(245, 197, 24, 0.1);
+    border: 1px solid rgba(245, 197, 24, 0.3);
+  }
+  .imdb-badge .tag{ background: #f5c518; }
+  .partner-badge{
+    color: var(--rose);
+    background: rgba(224, 113, 154, 0.1);
+    border: 1px solid rgba(224, 113, 154, 0.3);
+  }
+  .partner-badge .tag{ background: var(--rose); }
 
   footer{
     text-align:center;
@@ -184,128 +224,286 @@
     font-size: 11px;
     padding: 30px 20px 10px;
   }
+
+  /* Who-are-you picker */
+  .overlay{
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(10,12,17,0.96);
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .overlay.show{ display:flex; }
+  .picker{ text-align:center; max-width: 320px; width:100%; }
+  .picker h2{
+    font-family:'Bebas Neue', sans-serif;
+    font-size: 30px; letter-spacing: 1px;
+    color: var(--gold-bright); margin: 0 0 6px;
+  }
+  .picker p{
+    color: var(--text-dim);
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px; margin: 0 0 24px;
+  }
+  .picker button{
+    display:block; width:100%;
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    color: var(--text);
+    font-family:'Inter', sans-serif;
+    font-size: 16px; font-weight: 600;
+    padding: 16px; margin-bottom: 10px;
+    border-radius: 10px; cursor:pointer;
+  }
+  .picker button:active{ border-color: var(--gold); }
 </style>
 </head>
 <body>
 
+<div class="overlay" id="overlay">
+  <div class="picker">
+    <h2>WHO ARE YOU?</h2>
+    <p>Pick your name. You can change it later.</p>
+    <div id="pickerBtns"></div>
+  </div>
+</div>
+
 <header>
-  <h1>MCU MOVIES</h1>
-  <div class="subtitle">Chronological order</div>
+  <div class="head-top">
+    <h1>OUR WATCHLIST</h1>
+    <button class="whoami" id="whoami">—</button>
+  </div>
   <div class="stats">
     <div><b id="statCount">0 / 0</b>rated</div>
     <div><b id="statAvg">&mdash;</b>your average</div>
+    <button class="sync" id="syncBtn">refresh</button>
   </div>
+  <div class="tabs" id="tabs"></div>
 </header>
 
-<main>
-  <div class="timeline" id="list"></div>
-</main>
+<main id="main"></main>
 
 <footer>Made only for Adélka ♡</footer>
 
 <script>
-const MOVIES = [
-  { title: "Spider-Man", year: 2002, wiki: "Spider-Man (2002 film)" },
-  { title: "Spider-Man 2", year: 2004, wiki: "Spider-Man 2" },
-  { title: "Spider-Man 3", year: 2007, wiki: "Spider-Man 3" },
-  { title: "Iron Man", year: 2008, wiki: "Iron Man (2008 film)" },
-  { title: "The Incredible Hulk", year: 2008, wiki: "The Incredible Hulk (film)" },
-  { title: "Iron Man 2", year: 2010, wiki: "Iron Man 2" },
-  { title: "Thor", year: 2011, wiki: "Thor (film)" },
-  { title: "Captain America: The First Avenger", year: 2011, wiki: "Captain America: The First Avenger" },
-  { title: "The Avengers", year: 2012, wiki: "The Avengers (2012 film)" },
-  { title: "Iron Man 3", year: 2013, wiki: "Iron Man 3" },
-  { title: "Thor: The Dark World", year: 2013, wiki: "Thor: The Dark World" },
-  { title: "Captain America: The Winter Soldier", year: 2014, wiki: "Captain America: The Winter Soldier" },
-  { title: "Guardians of the Galaxy", year: 2014, wiki: "Guardians of the Galaxy (film)" },
-  { title: "Avengers: Age of Ultron", year: 2015, wiki: "Avengers: Age of Ultron" },
-  { title: "Ant-Man", year: 2015, wiki: "Ant-Man (film)" },
-  { title: "Captain America: Civil War", year: 2016, wiki: "Captain America: Civil War" },
-  { title: "Doctor Strange", year: 2016, wiki: "Doctor Strange (2016 film)" },
-  { title: "Guardians of the Galaxy Vol. 2", year: 2017, wiki: "Guardians of the Galaxy Vol. 2" },
-  { title: "Spider-Man: Homecoming", year: 2017, wiki: "Spider-Man: Homecoming" },
-  { title: "Thor: Ragnarok", year: 2017, wiki: "Thor: Ragnarok" },
-  { title: "Black Panther", year: 2018, wiki: "Black Panther (film)" },
-  { title: "Avengers: Infinity War", year: 2018, wiki: "Avengers: Infinity War" },
-  { title: "Ant-Man and The Wasp", year: 2018, wiki: "Ant-Man and the Wasp" },
-  { title: "Captain Marvel", year: 2019, wiki: "Captain Marvel (film)" },
-  { title: "Avengers: Endgame", year: 2019, wiki: "Avengers: Endgame" },
-  { title: "Spider-Man: Far From Home", year: 2019, wiki: "Spider-Man: Far From Home" },
-  { title: "Black Widow", year: 2021, wiki: "Black Widow (film)" },
-  { title: "Shang-Chi and The Legend of The Ten Rings", year: 2021, wiki: "Shang-Chi and the Legend of the Ten Rings" },
-  { title: "Eternals", year: 2021, wiki: "Eternals (film)" },
-  { title: "Spider-Man: No Way Home", year: 2021, wiki: "Spider-Man: No Way Home" },
-  { title: "Doctor Strange in the Multiverse of Madness", year: 2022, wiki: "Doctor Strange in the Multiverse of Madness" },
-  { title: "Thor: Love and Thunder", year: 2022, wiki: "Thor: Love and Thunder" },
-  { title: "Black Panther: Wakanda Forever", year: 2022, wiki: "Black Panther: Wakanda Forever" },
-  { title: "Ant-Man and The Wasp: Quantumania", year: 2023, wiki: "Ant-Man and the Wasp: Quantumania" },
-  { title: "Guardians of the Galaxy Vol. 3", year: 2023, wiki: "Guardians of the Galaxy Vol. 3" },
-  { title: "The Marvels", year: 2023, wiki: "The Marvels" },
-  { title: "Deadpool & Wolverine", year: 2024, wiki: "Deadpool & Wolverine" },
-  { title: "Captain America: Brave New World", year: 2025, wiki: "Captain America: Brave New World" },
-  { title: "Thunderbolts*", year: 2025, wiki: "Thunderbolts (film)" },
-  { title: "The Fantastic Four: First Steps", year: 2025, wiki: "The Fantastic Four: First Steps" },
-  { title: "Spider-Man: Brand New Day", year: 2026, wiki: "Spider-Man: Brand New Day" },
-  { title: "Avengers: Doomsday", year: 2026, wiki: "Avengers: Doomsday" }
-];
+/* ============================================================
+   1. SETTINGS — edit these three things, nothing else
+   ============================================================ */
 
-// Get a free key at https://www.omdbapi.com/apikey.aspx (instant, no card needed)
-// then paste it below between the quotes.
+// (a) Your OMDb key (already working)
 const OMDB_API_KEY = "731b591a";
 
-const STORAGE_KEY = "mcu-ratings-v1";
-function loadRatings(){
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
-  catch(e){ return {}; }
-}
-function saveRatings(r){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(r));
-}
-let ratings = loadRatings();
+// (b) The two of you. Change "Me" to your real name.
+//     IMPORTANT: never change the "id" values once you start
+//     rating — they are what the saved scores are attached to.
+const PEOPLE = [
+  { id: "p1", name: "Adélka" },
+  { id: "p2", name: "Doggy" }
+];
 
-const IMDB_CACHE_KEY = "mcu-imdb-cache-v1";
-function loadImdbCache(){
-  try { return JSON.parse(localStorage.getItem(IMDB_CACHE_KEY)) || {}; }
-  catch(e){ return {}; }
-}
-function saveImdbCache(c){
-  localStorage.setItem(IMDB_CACHE_KEY, JSON.stringify(c));
-}
-let imdbCache = loadImdbCache();
+// (c) Your Firebase Realtime Database URL (guide below).
+//     Paste it between the quotes, no trailing slash.
+const FIREBASE_DB_URL = "https://watchlist-c4c6c-default-rtdb.europe-west1.firebasedatabase.app";
 
-function showImdbBadge(el, score){
-  el.querySelector(".score").textContent = score;
-  el.classList.add("show");
-}
 
-function hideImdbBadge(el){
-  if(!el) return;
-  el.classList.remove("show");
-  el.querySelector(".score").textContent = "";
-}
+/* ============================================================
+   2. THE LISTS
+   ------------------------------------------------------------
+   To add something later, just add a line to the right list.
+   The "id" is the permanent name of that entry — as long as you
+   never change an existing id, existing scores are never lost.
+   Use a new, unique id for anything you add.
+   ============================================================ */
 
-function revealImdb(movie, badgeEl){
-  if(!badgeEl) return;
-  const cached = imdbCache[movie.title];
-  if(cached){
-    showImdbBadge(badgeEl, cached);
-    return;
+const CATALOG = [
+  {
+    key: "marvel",
+    label: "Marvel",
+    items: [
+      { id:"mv-spiderman-2002", title:"Spider-Man", year:2002, wiki:"Spider-Man (2002 film)" },
+      { id:"mv-spiderman2-2004", title:"Spider-Man 2", year:2004, wiki:"Spider-Man 2" },
+      { id:"mv-spiderman3-2007", title:"Spider-Man 3", year:2007, wiki:"Spider-Man 3" },
+      { id:"mv-ironman-2008", title:"Iron Man", year:2008, wiki:"Iron Man (2008 film)" },
+      { id:"mv-hulk-2008", title:"The Incredible Hulk", year:2008, wiki:"The Incredible Hulk (film)" },
+      { id:"mv-ironman2-2010", title:"Iron Man 2", year:2010, wiki:"Iron Man 2" },
+      { id:"mv-thor-2011", title:"Thor", year:2011, wiki:"Thor (film)" },
+      { id:"mv-capfirst-2011", title:"Captain America: The First Avenger", year:2011, wiki:"Captain America: The First Avenger" },
+      { id:"mv-avengers-2012", title:"The Avengers", year:2012, wiki:"The Avengers (2012 film)" },
+      { id:"mv-ironman3-2013", title:"Iron Man 3", year:2013, wiki:"Iron Man 3" },
+      { id:"mv-thordark-2013", title:"Thor: The Dark World", year:2013, wiki:"Thor: The Dark World" },
+      { id:"mv-capwinter-2014", title:"Captain America: The Winter Soldier", year:2014, wiki:"Captain America: The Winter Soldier" },
+      { id:"mv-gotg-2014", title:"Guardians of the Galaxy", year:2014, wiki:"Guardians of the Galaxy (film)" },
+      { id:"mv-ultron-2015", title:"Avengers: Age of Ultron", year:2015, wiki:"Avengers: Age of Ultron" },
+      { id:"mv-antman-2015", title:"Ant-Man", year:2015, wiki:"Ant-Man (film)" },
+      { id:"mv-civilwar-2016", title:"Captain America: Civil War", year:2016, wiki:"Captain America: Civil War" },
+      { id:"mv-strange-2016", title:"Doctor Strange", year:2016, wiki:"Doctor Strange (2016 film)" },
+      { id:"mv-gotg2-2017", title:"Guardians of the Galaxy Vol. 2", year:2017, wiki:"Guardians of the Galaxy Vol. 2" },
+      { id:"mv-homecoming-2017", title:"Spider-Man: Homecoming", year:2017, wiki:"Spider-Man: Homecoming" },
+      { id:"mv-ragnarok-2017", title:"Thor: Ragnarok", year:2017, wiki:"Thor: Ragnarok" },
+      { id:"mv-blackpanther-2018", title:"Black Panther", year:2018, wiki:"Black Panther (film)" },
+      { id:"mv-infinitywar-2018", title:"Avengers: Infinity War", year:2018, wiki:"Avengers: Infinity War" },
+      { id:"mv-antman2-2018", title:"Ant-Man and The Wasp", year:2018, wiki:"Ant-Man and the Wasp", omdb:"Ant-Man and the Wasp" },
+      { id:"mv-captainmarvel-2019", title:"Captain Marvel", year:2019, wiki:"Captain Marvel (film)" },
+      { id:"mv-endgame-2019", title:"Avengers: Endgame", year:2019, wiki:"Avengers: Endgame" },
+      { id:"mv-farfromhome-2019", title:"Spider-Man: Far From Home", year:2019, wiki:"Spider-Man: Far From Home" },
+      { id:"mv-blackwidow-2021", title:"Black Widow", year:2021, wiki:"Black Widow (film)" },
+      { id:"mv-shangchi-2021", title:"Shang-Chi and The Legend of The Ten Rings", year:2021, wiki:"Shang-Chi and the Legend of the Ten Rings", omdb:"Shang-Chi and the Legend of the Ten Rings" },
+      { id:"mv-eternals-2021", title:"Eternals", year:2021, wiki:"Eternals (film)" },
+      { id:"mv-nowayhome-2021", title:"Spider-Man: No Way Home", year:2021, wiki:"Spider-Man: No Way Home" },
+      { id:"mv-strange2-2022", title:"Doctor Strange in the Multiverse of Madness", year:2022, wiki:"Doctor Strange in the Multiverse of Madness" },
+      { id:"mv-thorlove-2022", title:"Thor: Love and Thunder", year:2022, wiki:"Thor: Love and Thunder" },
+      { id:"mv-wakanda-2022", title:"Black Panther: Wakanda Forever", year:2022, wiki:"Black Panther: Wakanda Forever" },
+      { id:"mv-quantumania-2023", title:"Ant-Man and The Wasp: Quantumania", year:2023, wiki:"Ant-Man and the Wasp: Quantumania", omdb:"Ant-Man and the Wasp: Quantumania" },
+      { id:"mv-gotg3-2023", title:"Guardians of the Galaxy Vol. 3", year:2023, wiki:"Guardians of the Galaxy Vol. 3" },
+      { id:"mv-marvels-2023", title:"The Marvels", year:2023, wiki:"The Marvels" },
+      { id:"mv-deadpool3-2024", title:"Deadpool & Wolverine", year:2024, wiki:"Deadpool & Wolverine" },
+      { id:"mv-bravenewworld-2025", title:"Captain America: Brave New World", year:2025, wiki:"Captain America: Brave New World" },
+      { id:"mv-thunderbolts-2025", title:"Thunderbolts*", year:2025, wiki:"Thunderbolts (film)", omdb:"Thunderbolts" },
+      { id:"mv-fantastic4-2025", title:"The Fantastic Four: First Steps", year:2025, wiki:"The Fantastic Four: First Steps" },
+      { id:"mv-brandnewday-2026", title:"Spider-Man: Brand New Day", year:2026, wiki:"Spider-Man: Brand New Day" },
+      { id:"mv-doomsday-2026", title:"Avengers: Doomsday", year:2026, wiki:"Avengers: Doomsday" }
+    ]
+  },
+  {
+    key: "potter",
+    label: "Harry Potter",
+    items: [
+      { id:"hp-stone-2001", title:"Harry Potter and the Philosopher's Stone", year:2001, wiki:"Harry Potter and the Philosopher's Stone (film)", omdb:"Harry Potter and the Sorcerer's Stone" },
+      { id:"hp-chamber-2002", title:"Harry Potter and the Chamber of Secrets", year:2002, wiki:"Harry Potter and the Chamber of Secrets (film)" },
+      { id:"hp-azkaban-2004", title:"Harry Potter and the Prisoner of Azkaban", year:2004, wiki:"Harry Potter and the Prisoner of Azkaban (film)" },
+      { id:"hp-goblet-2005", title:"Harry Potter and the Goblet of Fire", year:2005, wiki:"Harry Potter and the Goblet of Fire (film)" },
+      { id:"hp-phoenix-2007", title:"Harry Potter and the Order of the Phoenix", year:2007, wiki:"Harry Potter and the Order of the Phoenix (film)" },
+      { id:"hp-prince-2009", title:"Harry Potter and the Half-Blood Prince", year:2009, wiki:"Harry Potter and the Half-Blood Prince (film)" },
+      { id:"hp-hallows1-2010", title:"Harry Potter and the Deathly Hallows – Part 1", year:2010, wiki:"Harry Potter and the Deathly Hallows – Part 1", omdb:"Harry Potter and the Deathly Hallows: Part 1" },
+      { id:"hp-hallows2-2011", title:"Harry Potter and the Deathly Hallows – Part 2", year:2011, wiki:"Harry Potter and the Deathly Hallows – Part 2", omdb:"Harry Potter and the Deathly Hallows: Part 2" }
+    ]
+  },
+  {
+    key: "series",
+    label: "Series",
+    items: [
+      { id:"sr-office-2005", title:"The Office (US)", year:2005, wiki:"The Office (American TV series)", imdbId:"tt0386676" },
+      { id:"sr-innocence-2026", title:"Museum of Innocence", year:2026, wiki:"Masumiyet Müzesi", imdbId:"tt34692373" }
+    ]
+  },
+  {
+    key: "movies",
+    label: "Movies",
+    items: [
+      // Add anything you watch together here, e.g.:
+      // { id:"ot-parasite-2019", title:"Parasite", year:2019, wiki:"Parasite (2019 film)" },
+    ]
   }
-  if(!OMDB_API_KEY || OMDB_API_KEY === "YOUR_KEY_HERE") return;
-  fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(movie.title)}&y=${movie.year}&apikey=${OMDB_API_KEY}`)
+];
+
+
+/* ============================================================
+   3. APP CODE — you shouldn't need to touch anything below
+   ============================================================ */
+
+const ME_KEY = "wl-me-v1";
+const LOCAL_KEY = "wl-ratings-v1";
+const IMDB_CACHE_KEY = "wl-imdb-cache-v1";
+
+function readJSON(key, fallback){
+  try { return JSON.parse(localStorage.getItem(key)) || fallback; }
+  catch(e){ return fallback; }
+}
+function writeJSON(key, val){
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){}
+}
+
+// all ratings: { p1: {itemId: score}, p2: {itemId: score} }
+let allRatings = readJSON(LOCAL_KEY, {});
+let imdbCache  = readJSON(IMDB_CACHE_KEY, {});
+let meId       = localStorage.getItem(ME_KEY) || null;
+
+function me(){ return PEOPLE.find(p => p.id === meId) || PEOPLE[0]; }
+function partner(){ return PEOPLE.find(p => p.id !== meId) || PEOPLE[1]; }
+function myScores(){ return allRatings[meId] || {}; }
+function partnerScores(){ return allRatings[partner().id] || {}; }
+
+const dbReady = () =>
+  FIREBASE_DB_URL && FIREBASE_DB_URL.indexOf("PASTE_") === -1;
+
+function setSyncLabel(text){
+  document.getElementById("syncBtn").textContent = text;
+}
+
+// ---- Firebase (plain REST, no SDK needed) ----
+async function pullFromCloud(){
+  if(!dbReady()){ setSyncLabel("local only"); return; }
+  setSyncLabel("syncing…");
+  try{
+    const res = await fetch(`${FIREBASE_DB_URL}/ratings.json`);
+    const data = await res.json();
+    if(data && typeof data === "object"){
+      allRatings = data;
+      writeJSON(LOCAL_KEY, allRatings);
+    }
+    setSyncLabel("refresh");
+    renderAll();
+  }catch(e){
+    setSyncLabel("offline");
+  }
+}
+
+async function pushOne(itemId, value){
+  // keep local copy first so nothing is lost if the network fails
+  if(!allRatings[meId]) allRatings[meId] = {};
+  if(value === null) delete allRatings[meId][itemId];
+  else allRatings[meId][itemId] = value;
+  writeJSON(LOCAL_KEY, allRatings);
+
+  if(!dbReady()) return;
+  try{
+    await fetch(`${FIREBASE_DB_URL}/ratings/${meId}.json`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [itemId]: value })
+    });
+    setSyncLabel("saved ✓");
+    setTimeout(() => setSyncLabel("refresh"), 1200);
+  }catch(e){
+    setSyncLabel("offline");
+  }
+}
+
+// ---- IMDb ----
+function imdbUrl(item){
+  if(item.imdbId) return `https://www.omdbapi.com/?i=${item.imdbId}&apikey=${OMDB_API_KEY}`;
+  const t = encodeURIComponent(item.omdb || item.title);
+  return `https://www.omdbapi.com/?t=${t}&y=${item.year}&apikey=${OMDB_API_KEY}`;
+}
+
+function revealImdb(item, badgeEl){
+  if(!badgeEl) return;
+  const cached = imdbCache[item.id];
+  if(cached){ showBadge(badgeEl, cached); return; }
+  if(!OMDB_API_KEY) return;
+  fetch(imdbUrl(item))
     .then(r => r.json())
     .then(data => {
       if(data && data.imdbRating && data.imdbRating !== "N/A"){
-        imdbCache[movie.title] = data.imdbRating;
-        saveImdbCache(imdbCache);
-        showImdbBadge(badgeEl, data.imdbRating);
+        imdbCache[item.id] = data.imdbRating;
+        writeJSON(IMDB_CACHE_KEY, imdbCache);
+        showBadge(badgeEl, data.imdbRating);
       }
     })
     .catch(() => {});
 }
 
-// Restricts input to IMDb-style scores: a single digit, optionally with
-// one decimal digit (e.g. "6.8"), or exactly "10". Max two digits total.
+function showBadge(el, score){
+  el.querySelector(".score").textContent = score;
+  el.classList.add("show");
+}
+function hideBadge(el){
+  if(!el) return;
+  el.classList.remove("show");
+  el.querySelector(".score").textContent = "";
+}
+
+// ---- input rules: one digit, optional one decimal, or 10 ----
 function sanitizeScoreInput(raw){
   let v = raw.replace(/[^0-9.]/g, "");
   const firstDot = v.indexOf(".");
@@ -319,95 +517,161 @@ function sanitizeScoreInput(raw){
   return decPart !== undefined ? `${intPart}.${decPart}` : (intPart || "");
 }
 
+// ---- rendering ----
+let activeTab = CATALOG[0].key;
+
 function updateStats(){
-  const vals = Object.values(ratings).filter(v => v !== undefined && v !== null && v !== "");
-  document.getElementById("statCount").textContent = vals.length + " / " + MOVIES.length;
-  if(vals.length){
-    const avg = vals.reduce((a,b)=>a+Number(b),0) / vals.length;
-    document.getElementById("statAvg").textContent = avg.toFixed(1);
-  } else {
-    document.getElementById("statAvg").textContent = "—";
-  }
+  const group = CATALOG.find(g => g.key === activeTab);
+  const mine = myScores();
+  const vals = group.items.map(i => mine[i.id]).filter(v => v !== undefined && v !== null && v !== "");
+  document.getElementById("statCount").textContent = vals.length + " / " + group.items.length;
+  document.getElementById("statAvg").textContent =
+    vals.length ? (vals.reduce((a,b)=>a+Number(b),0) / vals.length).toFixed(1) : "—";
 }
 
-const list = document.getElementById("list");
+function buildTabs(){
+  const tabsEl = document.getElementById("tabs");
+  tabsEl.innerHTML = "";
+  CATALOG.forEach(group => {
+    const b = document.createElement("button");
+    b.className = "tab" + (group.key === activeTab ? " active" : "");
+    b.textContent = group.label;
+    b.onclick = () => {
+      activeTab = group.key;
+      document.querySelectorAll(".tab").forEach((t, idx) =>
+        t.classList.toggle("active", CATALOG[idx].key === activeTab));
+      document.querySelectorAll(".timeline").forEach(t =>
+        t.classList.toggle("active", t.dataset.key === activeTab));
+      updateStats();
+      window.scrollTo(0,0);
+    };
+    tabsEl.appendChild(b);
+  });
+}
 
-MOVIES.forEach((m, i) => {
-  const card = document.createElement("div");
-  card.className = "card";
-  card.style.animationDelay = (i * 0.02) + "s";
+function renderAll(){
+  const main = document.getElementById("main");
+  main.innerHTML = "";
+  const mine = myScores();
+  const theirs = partnerScores();
 
-  const existing = ratings[m.title];
-  if(existing !== undefined && existing !== "") card.classList.add("rated");
+  CATALOG.forEach(group => {
+    const wrap = document.createElement("div");
+    wrap.className = "timeline" + (group.key === activeTab ? " active" : "");
+    wrap.dataset.key = group.key;
 
-  card.innerHTML = `
-    <div class="idx"><div class="dot"></div></div>
-    <div class="poster" id="poster-${i}"></div>
-    <div class="info">
-      <div class="title">${m.title}</div>
-      <div class="year">${m.year}</div>
-      <div class="rate-row">
-        <input type="text" inputmode="decimal" maxlength="4"
-               placeholder="—" id="rate-${i}"
-               value="${existing !== undefined ? existing : ''}">
-        <span class="max">/ 10</span>
-        <span class="imdb-badge" id="imdb-${i}"><span class="imdb-tag">IMDb</span><span class="score"></span></span>
-        <button class="clear-btn" id="clear-${i}">clear</button>
-      </div>
-    </div>
-  `;
-  list.appendChild(card);
-
-  const input = card.querySelector(`#rate-${i}`);
-  const imdbBadge = card.querySelector(`#imdb-${i}`);
-
-  if(existing !== undefined && existing !== "") revealImdb(m, imdbBadge);
-
-  input.addEventListener("input", () => {
-    input.value = sanitizeScoreInput(input.value);
-    if(input.value === ""){
-      delete ratings[m.title];
-      card.classList.remove("rated");
-    } else {
-      ratings[m.title] = input.value;
-      card.classList.add("rated");
+    if(group.items.length === 0){
+      wrap.classList.add("empty");
+      wrap.innerHTML = `<div class="empty-state">Nothing here yet.<br>Add films to the "${group.label}" list<br>in the file whenever you want.</div>`;
+      main.appendChild(wrap);
+      return;
     }
-    saveRatings(ratings);
-    updateStats();
-  });
 
-  input.addEventListener("blur", () => {
-    if(input.value === "") return;
-    let v = Math.max(0, Math.min(10, Number(input.value)));
-    v = Math.round(v * 10) / 10;
-    input.value = v;
-    ratings[m.title] = v;
-    saveRatings(ratings);
-    revealImdb(m, imdbBadge);
-  });
+    group.items.forEach((item, i) => {
+      const myVal = mine[item.id];
+      const theirVal = theirs[item.id];
+      const hasMine = myVal !== undefined && myVal !== null && myVal !== "";
 
-  card.querySelector(`#clear-${i}`).addEventListener("click", () => {
-    input.value = "";
-    delete ratings[m.title];
-    card.classList.remove("rated");
-    hideImdbBadge(imdbBadge);
-    saveRatings(ratings);
-    updateStats();
-  });
+      const card = document.createElement("div");
+      card.className = "card" + (hasMine ? " rated" : "");
+      card.innerHTML = `
+        <div class="idx"><div class="dot"></div></div>
+        <div class="poster"></div>
+        <div class="info">
+          <div class="title">${item.title}</div>
+          <div class="year">${item.year}</div>
+          <div class="rate-row">
+            <input type="text" inputmode="decimal" maxlength="4" placeholder="—"
+                   value="${hasMine ? myVal : ""}">
+            <span class="max">/ 10</span>
+            <span class="badge imdb-badge"><span class="tag">IMDb</span><span class="score"></span></span>
+            <span class="badge partner-badge"><span class="tag">${partner().name}</span><span class="score"></span></span>
+            <button class="clear-btn">clear</button>
+          </div>
+        </div>
+      `;
+      wrap.appendChild(card);
 
-  // Fetch poster from Wikipedia (needs internet on first load; browser caches after)
-  fetch("https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(m.wiki))
-    .then(r => r.ok ? r.json() : null)
-    .then(data => {
-      const posterEl = document.getElementById(`poster-${i}`);
-      if(data && data.thumbnail && data.thumbnail.source && posterEl){
-        posterEl.style.backgroundImage = `url("${data.thumbnail.source}")`;
+      const input       = card.querySelector("input");
+      const imdbBadge   = card.querySelector(".imdb-badge");
+      const partnerBadge= card.querySelector(".partner-badge");
+      const posterEl    = card.querySelector(".poster");
+
+      function showPartner(){
+        if(theirVal !== undefined && theirVal !== null && theirVal !== ""){
+          showBadge(partnerBadge, theirVal);
+        }
       }
-    })
-    .catch(() => {});
-});
 
-updateStats();
+      if(hasMine){ revealImdb(item, imdbBadge); showPartner(); }
+
+      input.addEventListener("input", () => {
+        input.value = sanitizeScoreInput(input.value);
+        card.classList.toggle("rated", input.value !== "");
+        updateStats();
+      });
+
+      input.addEventListener("blur", () => {
+        if(input.value === "") return;
+        let v = Math.round(Math.max(0, Math.min(10, Number(input.value))) * 10) / 10;
+        input.value = v;
+        pushOne(item.id, v);
+        revealImdb(item, imdbBadge);
+        showPartner();
+        updateStats();
+      });
+
+      card.querySelector(".clear-btn").addEventListener("click", () => {
+        input.value = "";
+        card.classList.remove("rated");
+        hideBadge(imdbBadge);
+        hideBadge(partnerBadge);
+        pushOne(item.id, null);
+        updateStats();
+      });
+
+      fetch("https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(item.wiki))
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if(d && d.thumbnail && d.thumbnail.source){
+            posterEl.style.backgroundImage = `url("${d.thumbnail.source}")`;
+          }
+        })
+        .catch(() => {});
+    });
+
+    main.appendChild(wrap);
+  });
+
+  document.getElementById("whoami").textContent = "you: " + me().name;
+  updateStats();
+}
+
+// ---- who are you ----
+function showPicker(){
+  const box = document.getElementById("pickerBtns");
+  box.innerHTML = "";
+  PEOPLE.forEach(p => {
+    const b = document.createElement("button");
+    b.textContent = p.name;
+    b.onclick = () => {
+      meId = p.id;
+      localStorage.setItem(ME_KEY, meId);
+      document.getElementById("overlay").classList.remove("show");
+      renderAll();
+      pullFromCloud();
+    };
+    box.appendChild(b);
+  });
+  document.getElementById("overlay").classList.add("show");
+}
+
+document.getElementById("whoami").onclick = showPicker;
+document.getElementById("syncBtn").onclick = pullFromCloud;
+
+buildTabs();
+if(!meId){ showPicker(); }
+else { renderAll(); pullFromCloud(); }
 </script>
 </body>
 </html>
