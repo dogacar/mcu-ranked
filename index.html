@@ -316,9 +316,10 @@ const FIREBASE_DB_URL = "https://watchlist-c4c6c-default-rtdb.europe-west1.fireb
    Always give anything new its own unique id.
 
    Optional fields you can add to any line:
-     omdb:   "different title"   -> if OMDb can't find it by title
-     imdbId: "tt1234567"         -> most reliable IMDb lookup
-     poster: "https://..."       -> force a specific poster image
+     omdb:      "different title"   -> if OMDb can't find it by title
+     imdbId:    "tt1234567"         -> most reliable IMDb lookup
+     imdbScore: "7.3"               -> type the score in by hand
+     poster:    "https://..."       -> force a specific poster image
    ============================================================ */
 
 const CATALOG = [
@@ -389,7 +390,7 @@ const CATALOG = [
     label: "Series",
     items: [
       { id:"sr-office-2005", title:"The Office (US)", year:2005, wiki:"The Office (American TV series)", imdbId:"tt0386676" },
-      { id:"sr-innocence-2026", title:"Museum of Innocence", year:2026, wiki:"Masumiyet Müzesi", imdbId:"tt34692373" }
+      { id:"sr-innocence-2026", title:"Museum of Innocence", year:2026, wiki:"Masumiyet Müzesi", imdbId:"tt34692373", imdbScore:"7.3" }
     ]
   },
   {
@@ -510,6 +511,8 @@ function fetchOmdb(item){
 
 function revealImdb(item, badgeEl){
   if(!badgeEl) return;
+  // A hand-typed score always wins — used when OMDb has no rating yet.
+  if(item.imdbScore){ showBadge(badgeEl, item.imdbScore); return; }
   const cached = imdbCache[item.id];
   if(cached){ showBadge(badgeEl, cached); return; }
   fetchOmdb(item).then(data => {
